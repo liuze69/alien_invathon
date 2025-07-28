@@ -8,6 +8,7 @@ from random import randint
 from star import Star
 from time import sleep
 from game_stats import GameStats
+from button import Button
 
 class AlienInvasion:
     def __init__(self):
@@ -21,6 +22,7 @@ class AlienInvasion:
         self.shoot_sound = pygame.mixer.Sound('sound/shoot.mp3')
         self.bg_image = pygame.image.load('images/OIP-C(1).jpg')
         self.alien = pygame.sprite.Group()
+        
         # 背景音乐
         pygame.mixer.music.load('sound/坤坤开团神曲_爱给网_aigei_com.mp3')
         pygame.mixer.music.set_volume(0.2)
@@ -32,6 +34,12 @@ class AlienInvasion:
         self._create_fleet()
 
         self.stats = GameStats(self)
+        self.game_active = False  # 游戏是否处于活动状态
+        #self.game_over = False  # 游戏是否结束
+        self.play_button = Button(self, "Play") 
+        self.font = pygame.font.SysFont(None, 48)
+
+        
 
 
 
@@ -40,8 +48,8 @@ class AlienInvasion:
             alien_width = alien.rect.width
             alien_height = alien.rect.height
             current_x,current_y = alien_width, alien_height
-            while current_y < (self.settings.screen_height-randint(1,2)*alien_height):
-                while current_x < (self.settings.screen_width -randint(1,2)*alien_width):
+            while current_y < (self.settings.screen_height-2*alien_height):
+                while current_x < (self.settings.screen_width -2*alien_width):
                     self._create_alien(current_x,current_y)
                     current_x += 2*alien_width
                 current_y += 2*alien_height
@@ -68,8 +76,14 @@ class AlienInvasion:
                 self._check_keydown_events(event)
             elif event.type == pygame.KEYUP:
                  self._check_keyup_events(event)
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                self._check_play_button(mouse_pos)
 
-
+    def _check_play_button(self,mouse_pos):
+        if self.play_button.rect.collidepoint(mouse_pos):
+            self.game_active = True
+                
     
     def _check_keydown_events(self,event):
                 if event.key == pygame.K_RIGHT:
@@ -82,16 +96,20 @@ class AlienInvasion:
                     self.ship.moving_down = True
                 elif event.key == pygame.K_SPACE:
                     self._fire_bullet()
+                elif event.key == pygame.K_p:
+                    self._stop_game()
                 elif event.key == pygame.K_q:
                      sys.exit()
 
-
+    def _stop_game(self):
+        self.game_active = False
 
     def _fire_bullet(self):
-        if len(self.bullets) < self.settings.bullets_allowed:           
-            new_bullet = Bullet(self)
-            self.bullets.add(new_bullet)
-            self.shoot_sound.play()
+        if self.game_active:
+            if len(self.bullets) < self.settings.bullets_allowed:
+                new_bullet = Bullet(self)
+                self.bullets.add(new_bullet)
+                self.shoot_sound.play()
 
         
 
@@ -115,7 +133,8 @@ class AlienInvasion:
             bullet.draw_bullet()
         self.ship.blitme()
         self.alien.draw(self.screen)
-
+        if not self.game_active:
+            self.play_button.draw_button()
 
 
     def _update_bullets(self, star_collided=False):
@@ -172,17 +191,40 @@ class AlienInvasion:
         
 
     def _ship_hit(self):
-        self.stats.ships_left -= 1
+        if self.stats.ships_left > 0:
+            self.stats.ships_left -= 1
+            self.bullets.empty()
+            self.alien.empty()
+            self._create_fleet()
+            self.ship.center_ship()
+            sleep(0.5)
+        else:
+            self.game_active = False  # 游戏结束
+            self._show_game_over()
+            sleep(5)  # 显示5秒Game Over
+            self._reset_game()  # 重置游戏
+
+
+    def _show_game_over(self):
+        """显示Game Over文字"""
+        game_over_text = self.font.render("GAME OVER", True, (255, 0, 0))
+        text_rect = game_over_text.get_rect()
+        text_rect.center = (self.settings.screen_width // 2, self.settings.screen_height // 2)
+        self.screen.blit(game_over_text, text_rect)
+        pygame.display.flip()
+
+
+
+    def _reset_game(self):
+        """重置游戏状态"""
+        self.stats.reset_stats()
         self.bullets.empty()
         self.alien.empty()
-
         self._create_fleet()
         self.ship.center_ship()
-        sleep(0.5)
+        self.game_active = True
 
         
-        
-
     def _create_stars(self):
          for i in range(1): 
             x = randint(0, self.settings.screen_width - 50)
@@ -207,20 +249,23 @@ class AlienInvasion:
         star_collided = False  # 标记是否发生过star与飞船的碰撞
         while True:
             self._check_events()
-            self.ship.update()
-            self.bullets.update()
+            if self.game_active:
+                self.ship.update()
+                self.bullets.update()
+                self._update_aliens()
             self._update_screen()
             pygame.display.flip()
             self.clock.tick(60)
 
             self._update_bullets(star_collided)
-            self._update_aliens()
+            
 
             # 检查star与飞船碰撞
             if not star_collided and pygame.sprite.spritecollideany(self.ship, self.stars):
                 collided_star = pygame.sprite.spritecollideany(self.ship, self.stars)
                 self.stars.remove(collided_star)
                 star_collided = True
+             
 
 
 
