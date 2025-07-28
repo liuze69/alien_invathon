@@ -9,6 +9,7 @@ from star import Star
 from time import sleep
 from game_stats import GameStats
 from button import Button
+from score import Scoreboard
 
 class AlienInvasion:
     def __init__(self):
@@ -34,6 +35,7 @@ class AlienInvasion:
         self._create_fleet()
 
         self.stats = GameStats(self)
+        self.scoreboard = Scoreboard(self)
         self.game_active = False  # 游戏是否处于活动状态
         #self.game_over = False  # 游戏是否结束
         self.play_button = Button(self, "Play") 
@@ -83,6 +85,17 @@ class AlienInvasion:
     def _check_play_button(self,mouse_pos):
         if self.play_button.rect.collidepoint(mouse_pos):
             self.game_active = True
+
+            self.stats.reset_stats()
+            self.scoreboard.prep_score()
+            self.bullets.empty()
+            self.alien.empty()
+
+            self._create_fleet()
+            self.ship.center_ship()
+
+
+
                 
     
     def _check_keydown_events(self,event):
@@ -133,8 +146,10 @@ class AlienInvasion:
             bullet.draw_bullet()
         self.ship.blitme()
         self.alien.draw(self.screen)
+        self.scoreboard.show_score()  # 显示得分
         if not self.game_active:
             self.play_button.draw_button()
+        
 
 
     def _update_bullets(self, star_collided=False):
@@ -143,19 +158,22 @@ class AlienInvasion:
             if bullet.rect.bottom <= 0:
                 self.bullets.remove(bullet)
         # 检查子弹与星星的碰撞
-        if not star_collided:
+        '''if not star_collided:
             collisions = pygame.sprite.groupcollide(self.bullets, self.alien, True, True)
         else:
-            collisions = pygame.sprite.groupcollide(self.bullets, self.alien, False, True)
+            collisions = pygame.sprite.groupcollide(self.bullets, self.alien, False, True)'''
         self._check_bullet_alien_collisions()
 
 
     def _check_bullet_alien_collisions(self):
         collisions = pygame.sprite.groupcollide(self.bullets, self.alien, True, True)
+        if collisions:
+            self.stats.score += self.settings.alienpoints
+            self.scoreboard.prep_score()  # 更新得分显示
         if not self.alien:
             self.bullets.empty()
             self._create_fleet()
-
+        
 
 
     def _check_fleet_edges(self):
@@ -201,7 +219,8 @@ class AlienInvasion:
         else:
             self.game_active = False  # 游戏结束
             self._show_game_over()
-            sleep(5)  # 显示5秒Game Over
+            sleep(1)
+            self.scoreboard.zero_score() # 显示1秒Game Over
             self._reset_game()  # 重置游戏
 
 
