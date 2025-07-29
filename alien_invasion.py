@@ -158,21 +158,28 @@ class AlienInvasion:
             if bullet.rect.bottom <= 0:
                 self.bullets.remove(bullet)
         # 检查子弹与星星的碰撞
-        '''if not star_collided:
+        if not star_collided:
             collisions = pygame.sprite.groupcollide(self.bullets, self.alien, True, True)
+            if collisions:
+                self.stats.score += self.settings.alienpoints
+                self.scoreboard.prep_score()
+                self.scoreboard.check_high_score()  # 更新得分显示
         else:
-            collisions = pygame.sprite.groupcollide(self.bullets, self.alien, False, True)'''
-        self._check_bullet_alien_collisions()
+            collisions = pygame.sprite.groupcollide(self.bullets, self.alien, False, True)
+            if collisions:
+                self.stats.score += self.settings.alienpoints
+                self.scoreboard.prep_score()
+                self.scoreboard.check_high_score()  # 更新得分显示
 
+        self._check_bullet_alien_collisions()
 
     def _check_bullet_alien_collisions(self):
         collisions = pygame.sprite.groupcollide(self.bullets, self.alien, True, True)
-        if collisions:
-            self.stats.score += self.settings.alienpoints
-            self.scoreboard.prep_score()  # 更新得分显示
         if not self.alien:
             self.bullets.empty()
             self._create_fleet()
+            
+       
         
 
 
@@ -218,9 +225,11 @@ class AlienInvasion:
             sleep(0.5)
         else:
             self.game_active = False  # 游戏结束
+            #self.ship.over_ship()
             self._show_game_over()
-            sleep(1)
-            self.scoreboard.zero_score() # 显示1秒Game Over
+            sleep(3)
+            self.scoreboard.zero_score() # 显示3秒Game Over
+            
             self._reset_game()  # 重置游戏
 
 
@@ -236,6 +245,7 @@ class AlienInvasion:
 
     def _reset_game(self):
         """重置游戏状态"""
+        self.image = pygame.image.load('images/R-C.png')
         self.stats.reset_stats()
         self.bullets.empty()
         self.alien.empty()
@@ -261,6 +271,7 @@ class AlienInvasion:
             bullet.draw_bullet()
          self.ship.blitme()
          self.alien.draw(self.screen)
+
         
     
 

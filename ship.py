@@ -41,3 +41,9 @@ class Ship:
         self.rect.midbottom = self.screen_rect.midbottom
         self.x = float(self.rect.x)
         self.y = float(self.rect.y)
+
+    '''def over_ship(self):
+        """显示飞船被击中的图像"""
+        self.image = pygame.image.load('images/cxk.jpg')
+        self.sound = pygame.mixer.Sound('sound/over.mp3')
+        self.blitme()'''
